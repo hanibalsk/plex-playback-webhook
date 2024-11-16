@@ -13,11 +13,17 @@ from config_loader import load_config
 app = Flask(__name__)
 
 # Load configuration from the environment variable CONFIG_PATH or default to "config.yml"
-config_path = os.getenv("CONFIG_PATH", "config.yml")
+config_path = os.getenv("CONFIG_PATH", "config.yaml")
 config = load_config(config_path)
 
 # Configure logging
 log_file = config.get('log_file', '/data/logging.log')
+
+# Create logfile if it does not exist
+if not os.path.exists(log_file):
+    with open(log_file, "w") as f:
+        f.write("")
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -98,8 +104,8 @@ def is_within_schedule():
         start_time_str = schedule.get("start", "00:00")
         end_time_str = schedule.get("end", "23:59")
 
-        start_time = parse_time_string(start_time_str, sunrise_local, sunset_local)
-        end_time = parse_time_string(end_time_str, sunrise_local, sunset_local)
+        start_time = parse_time_string(start_time_str, sunrise_local, sunset_local).astimezone(local_tz)
+        end_time = parse_time_string(end_time_str, sunrise_local, sunset_local).astimezone(local_tz)
 
         # Determine if the current time falls within the start and end time
         if start_time <= now <= end_time:
@@ -126,7 +132,7 @@ def login():
     try:
         response = requests.post(auth_url, json={"password": auth_password})
         response.raise_for_status()
-        auth_token = response.json().get("token")
+        auth_token = response.text.strip()
         if not auth_token:
             logger.error("Failed to retrieve token from login response")
     except requests.exceptions.RequestException as e:
@@ -170,17 +176,20 @@ def plex_webhook():
 
     # Extract event type and device from the incoming webhook payload
     event_type = data.get('event')
-    device_name = data.get('Player', {}).get('title',
-                                             'Unknown Device')  # Get device name, default to 'Unknown Device' if missing
+    # Get device name, default to 'Unknown Device' if missing
+    device_name = data.get('Player', {}).get('title', 'Unknown Device')
 
     # Check if the event matches any of the target devices
     if device_name in devices:
         if event_type in ["media.play", "media.resume"]:
             # Trigger webhook for play or resume events
-            trigger_webhook(webhook_play_resume, event_type, device_name)
+            result, code = trigger_webhook(webhook_play_resume, event_type, device_name)
         elif event_type in ["media.pause", "media.stop"]:
-            # Trigger webhook for pause or stop events
-            trigger_webhook(webhook_pause_stop, event_type, device_name)
+            # Triggoer webhook for pause or stop events
+            result, code = trigger_webhook(webhook_pause_stop, event_type, device_name)
+        return result, code
+    else:
+        logger.info(f"Device {device_name} not in the list of devices to trigger webhooks for.")
 
     return jsonify({"status": "success"}), 200
 
@@ -190,6 +199,7 @@ def trigger_webhook(url, event_type, device_name):
     Send a request to the specified webhook URL based on the configured method (GET or POST).
     Include the event type and device name in the request payload or parameters.
     """
+    logging.info(f"Triggering webhook: {url} with event: {event_type}, device: {device_name}")
     global auth_token
     if auth_password and not auth_token:
         login()  # Authenticate if the token is not set and a password is provided
@@ -201,25 +211,31 @@ def trigger_webhook(url, event_type, device_name):
         logger.info(f"Triggering webhook: {url} with event: {event_type}, device: {device_name}")
         if webhook_method == 'POST':
             # Send a POST request with JSON payload
+            logging.info(
+                f"Sending POST request to {url} Triggered by Plex event: {event_type} for device: {device_name}")
             response = requests.post(url, headers=headers,
-                                     json={"message": f"Triggered by Plex event: {event_type}", "device": device_name})
+                                     json={"webhook_message": f"Triggered by Plex event: {event_type}", "plex_device": device_name})
         elif webhook_method == 'GET':
             # Send a GET request with query parameters
+            logging.info(
+                f"Sending GET request to {url} Triggered by Plex event: {event_type} for device: {device_name}")
             response = requests.get(url, headers=headers,
-                                    params={"message": f"Triggered by Plex event: {event_type}", "device": device_name})
+                                    params={"webhook_message": f"Triggered by Plex event: {event_type}", "plex_device": device_name})
         else:
             logger.error(f"Unsupported webhook method: {webhook_method}")
-            return
+            return jsonify({"status": "error", "message": "Unsupported webhook method"}), 400
         response.raise_for_status()
+        return jsonify({"status": "success", "event": event_type, "device": device_name}), 200
     except requests.exceptions.RequestException as e:
         if response is not None and response.status_code == 403:  # Forbidden error
             logger.warning("Forbidden error encountered. Resetting auth token.")
             auth_token = None  # Reset the token if forbidden
         logger.error(f"Failed to trigger webhook: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 if __name__ == '__main__':
     # Set debug mode and port from environment variables
     debug_mode = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
-    port = int(os.getenv('FLASK_PORT', 4995))
+    port = int(os.getenv('FLASK_PORT', 4994))
     app.run(host='0.0.0.0', port=port, debug=debug_mode)
