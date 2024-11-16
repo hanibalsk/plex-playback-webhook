@@ -12,7 +12,9 @@ from config_loader import load_config
 
 app = Flask(__name__)
 
-config = load_config("config.yml")
+# Load configuration from the environment variable CONFIG_PATH or default to "config.yml"
+config_path = os.getenv("CONFIG_PATH", "config.yml")
+config = load_config(config_path)
 
 # Configure logging
 log_file = config.get('log_file', '/data/logging.log')

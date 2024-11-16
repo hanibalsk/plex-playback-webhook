@@ -12,4 +12,5 @@ services:
       FLASK_PORT: 4995
       FLASK_ENV: production
       FLASK_DEBUG: 'false'
+      CONFIG_PATH: /data/config.yaml
     restart: unless-stopped

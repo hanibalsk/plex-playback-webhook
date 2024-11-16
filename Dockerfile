@@ -18,12 +18,13 @@ EXPOSE $FLASK_PORT
 # Set environment variables for production
 ENV FLASK_ENV=production
 ENV FLASK_DEBUG=false
+ENV CONFIG_PATH="/data/config.yaml"
 
 # Define a volume for /data to make it configurable
 VOLUME ["/data"]
 
 # Command to run the application
-CMD ["python", "plex_webhook_handler.py"]
+CMD ["python", "plex_webhook.py"]
 
 # Multi-platform support for different architectures
 # You can use the buildx plugin for Docker to build the image for multiple platforms
