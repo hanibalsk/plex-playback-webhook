@@ -23,8 +23,8 @@ ENV CONFIG_PATH="/data/config.yaml"
 # Define a volume for /data to make it configurable
 VOLUME ["/data"]
 
-# Command to run the application
-CMD ["python", "plex_webhook.py"]
+# Command to run the application using Gunicorn
+CMD ["gunicorn", "-b", "0.0.0.0:4995", "plex_webhook:app"]
 
 # Multi-platform support for different architectures
 # You can use the buildx plugin for Docker to build the image for multiple platforms

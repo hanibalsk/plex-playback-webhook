@@ -184,10 +184,11 @@ def plex_webhook():
         if event_type in ["media.play", "media.resume"]:
             # Trigger webhook for play or resume events
             result, code = trigger_webhook(webhook_play_resume, event_type, device_name)
+            return result, code
         elif event_type in ["media.pause", "media.stop"]:
-            # Triggoer webhook for pause or stop events
+            # Trigger webhook for pause or stop events
             result, code = trigger_webhook(webhook_pause_stop, event_type, device_name)
-        return result, code
+            return result, code
     else:
         logger.info(f"Device {device_name} not in the list of devices to trigger webhooks for.")
 
