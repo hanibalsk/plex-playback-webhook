@@ -6,6 +6,7 @@ This repository contains a Docker setup for the Plex Webhook Handler, which list
 
 ### Prerequisites
 - Docker and Docker Compose installed on your system.
+- Access to a Docker registry, such as `registry.rlt.sk` (optional).
 
 ### Build the Docker Image
 
@@ -29,7 +30,22 @@ You can use Docker Compose to easily set up and run the Plex Webhook Handler.
 
 ### Running with Docker Command
 
-If you prefer not to use Docker Compose, you can run the container directly using `docker run`:
+If you prefer not to use Docker Compose, you can run the container directly using `docker run` or pull the prebuilt image:
+
+#### Pull Prebuilt Image
+You can use the following command to pull the prebuilt image from GitHub Container Registry:
+
+```sh
+docker pull ghcr.io/hanibalsk/plex-playback-webhook:sha256-424ade4ffb4985e9b1f0f865256af6711a467e4900029e80a17026ba6cafeba7.sig
+```
+
+You can also pull the `latest` image:
+
+```sh
+docker pull ghcr.io/hanibalsk/plex-playback-webhook:latest
+```
+
+#### Run Container
 
 ```sh
 docker run -d   --name plex-webhook-handler   -p 4995:4995   -v /data:/data   -e FLASK_PORT=4995   -e FLASK_ENV=production   -e FLASK_DEBUG=false   registry.rlt.sk/plex-webhook-docker:latest
