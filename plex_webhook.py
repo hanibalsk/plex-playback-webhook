@@ -237,5 +237,5 @@ def trigger_webhook(url, event_type, device_name):
 if __name__ == '__main__':
     # Set debug mode and port from environment variables
     debug_mode = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
-    port = int(os.getenv('FLASK_PORT', 4994))
+    port = int(os.getenv('FLASK_PORT', 4995))
     app.run(host='0.0.0.0', port=port, debug=debug_mode)
