@@ -1,0 +1,13 @@
+# Configuration for webhooks and logging
+
+webhooks:
+  play_resume: "https://example.com/play_resume_webhook"  # URL to trigger on play or resume events
+  pause_stop: "https://example.com/pause_stop_webhook"    # URL to trigger on pause or stop events
+  devices:
+    - "Living Room TV"  # List of devices to monitor
+    - "Bedroom TV"
+  method: "POST"  # Set to "GET" or "POST" based on your needs
+  auth_url: "http://localhost:8000/login"  # URL for authentication
+  auth_password: "potatoes"  # Password for authentication, leave empty if not needed
+
+log_file: "/data/logging.log"  # Path to the log file
